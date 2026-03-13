@@ -702,17 +702,33 @@ Value Apply::eval(Assoc &e) {
 }
 
 Value Define::eval(Assoc &env) {
+    // Check if variable already exists
+    Value existing = find(var, env);
+
     // Check if it's a lambda definition for recursion support
     if (auto lambda = dynamic_cast<Lambda*>(e.get())) {
-        // Create a placeholder binding first
-        modify(var, Value(nullptr), env);
-        Value proc_val = e->eval(env);
-        modify(var, proc_val, env);
+        if (existing.get() != nullptr) {
+            // Variable exists, modify it with placeholder first
+            modify(var, Value(nullptr), env);
+            Value proc_val = e->eval(env);
+            modify(var, proc_val, env);
+        } else {
+            // Variable doesn't exist, extend with placeholder first
+            env = extend(var, Value(nullptr), env);
+            Value proc_val = e->eval(env);
+            modify(var, proc_val, env);
+        }
         return VoidV();
     }
 
     Value val = e->eval(env);
-    modify(var, val, env);
+    if (existing.get() != nullptr) {
+        // Variable exists, modify it
+        modify(var, val, env);
+    } else {
+        // Variable doesn't exist, extend the environment
+        env = extend(var, val, env);
+    }
     return VoidV();
 }
 
