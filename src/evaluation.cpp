@@ -688,6 +688,14 @@ Value Apply::eval(Assoc &e) {
         args.push_back(r->eval(e));
     }
 
+    // Check if this is a variadic expression (which handles its own argument count)
+    Variadic* variadic_expr = dynamic_cast<Variadic*>(clos_ptr->e.get());
+    if (variadic_expr) {
+        // For variadic expressions, directly evaluate with the arguments
+        return variadic_expr->evalRator(args);
+    }
+
+    // For non-variadic procedures, check parameter count
     if (args.size() != clos_ptr->parameters.size()) {
         throw RuntimeError("Wrong number of arguments");
     }
